@@ -4,7 +4,7 @@ open System.Threading.Tasks
 let mainTask = async { () }
 
 [<EntryPoint>]
-let main argv =
+let main _ =
     async {
         do! Async.SwitchToThreadPool()
         return! mainTask
