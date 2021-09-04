@@ -38,11 +38,8 @@ let main _ =
     _client.add_MessageReceived
         (fun x ->
             async {
-                do
-                    if (x.Channel.Id = channelId) then
-                        Console.WriteLine(x.Content)
-                    else
-                        ()
+                if (x.Channel.Id = channelId) then
+                    do! x.Channel.DeleteMessageAsync(x) |> awaitPlainTask
             }
             |> startAsPlainTask)
 
