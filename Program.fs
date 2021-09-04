@@ -1,4 +1,5 @@
 open System
+open System.Linq
 open HackerCredTest.Async
 open Discord.WebSocket
 open Discord
@@ -8,8 +9,26 @@ open System.Threading
 let token =
     Environment.GetEnvironmentVariable("TOKEN")
 
+let guildId =
+    uint64 (Environment.GetEnvironmentVariable("GUILD"))
+
 let channelId =
-    uint64 (Environment.GetEnvironmentVariable("CHANNEL_ID"))
+    uint64 (Environment.GetEnvironmentVariable("CHANNEL"))
+
+let roleName =
+    Environment.GetEnvironmentVariable("ROLE")
+
+// Generate SHA512 hash of input string
+let generateHash text =
+    let getbytes: (string -> byte []) = System.Text.Encoding.UTF8.GetBytes
+
+    use algorithm =
+        new Security.Cryptography.SHA512Managed()
+
+    text
+    |> (getbytes
+        >> algorithm.ComputeHash
+        >> System.Convert.ToHexString)
 
 let _client = new DiscordSocketClient()
 
@@ -39,7 +58,24 @@ let main _ =
         (fun x ->
             async {
                 if (x.Channel.Id = channelId) then
-                    do Console.WriteLine(x.Author.Username + "#" + x.Author.Discriminator)
+                    let username =
+                        x.Author.Username + "#" + x.Author.Discriminator
+
+                    let hashedUsername = generateHash username
+                    let normalizedMessage = x.Content.ToUpper().Trim()
+                    do Console.WriteLine($"Hashed username string is: {hashedUsername}")
+                    do Console.WriteLine($"Received content: {normalizedMessage}")
+
+                    if (hashedUsername = normalizedMessage) then
+                        do Console.WriteLine($"User {username} passed the test, assigning role")
+                        let guild = _client.GetGuild(guildId)
+
+                        let role =
+                            guild.Roles.First(fun x -> x.Name = roleName)
+
+                        let user = guild.GetUser(x.Author.Id)
+                        do! user.AddRoleAsync(role) |> awaitPlainTask
+
                     do! x.Channel.DeleteMessageAsync(x) |> awaitPlainTask
             }
             |> startAsPlainTask)
