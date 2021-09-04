@@ -39,6 +39,7 @@ let main _ =
         (fun x ->
             async {
                 if (x.Channel.Id = channelId) then
+                    do Console.WriteLine(x.Author.Username + "#" + x.Author.Discriminator)
                     do! x.Channel.DeleteMessageAsync(x) |> awaitPlainTask
             }
             |> startAsPlainTask)
